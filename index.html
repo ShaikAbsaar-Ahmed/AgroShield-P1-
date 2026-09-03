@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroShield — Smart Pest Identifier for Crops & Plants</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===================== RESET & ROOT ===================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --forest:    #0D2B1A;
+      --leaf:      #2D7A3A;
+      --leaf-light:#3FAF50;
+      --gold:      #C8A84B;
+      --gold-light:#E6C96A;
+      --cream:     #F2EFE7;
+      --white:     #FFFFFF;
+      --glass:     rgba(13,43,26,0.82);
+      --glass2:    rgba(255,255,255,0.07);
+      --glass3:    rgba(255,255,255,0.12);
+      --shadow:    0 8px 48px rgba(0,0,0,0.38);
+      --radius:    18px;
+      --transition: 0.38s cubic-bezier(.4,0,.2,1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--forest);
+      color: var(--cream);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    ::selection { background: var(--gold); color: var(--forest); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--forest); }
+    ::-webkit-scrollbar-thumb { background: var(--leaf); border-radius: 3px; }
+
+    /* ===================== NAV ===================== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(200,168,75,0.15);
+      transition: var(--transition);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--white); text-decoration: none;
+    }
+    .nav-logo .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--leaf), var(--gold));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links {
+      display: flex; gap: 2rem; list-style: none;
+    }
+    .nav-links a {
+      color: rgba(242,239,231,0.8); text-decoration: none;
+      font-size: 0.9rem; font-weight: 500; letter-spacing: 0.03em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--leaf), var(--leaf-light));
+      color: var(--white); border: none; border-radius: 50px;
+      padding: 0.55rem 1.4rem; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 4px 20px rgba(45,122,58,0.4);
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(45,122,58,0.6); }
+
+    /* ===================== HERO ===================== */
+    .hero {
+      position: relative; min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      overflow: hidden; padding-top: 80px;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 40%, #1a4a27 0%, var(--forest) 70%);
+    }
+    /* Animated field SVG */
+    .field-container {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 55%; pointer-events: none;
+    }
+    .field-svg { width: 100%; height: 100%; }
+    .stalk { transform-origin: bottom center; }
+    @keyframes sway1 { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+    @keyframes sway2 { 0%,100%{transform:rotate(2deg)} 50%{transform:rotate(-2deg)} }
+    @keyframes sway3 { 0%,100%{transform:rotate(-1deg)} 50%{transform:rotate(3deg)} }
+    @keyframes pulse-glow { 0%,100%{opacity:0.6} 50%{opacity:1} }
+    .floating-particle {
+      position: absolute; border-radius: 50%;
+      background: var(--gold); opacity: 0;
+      animation: float-up 4s ease-in infinite;
+    }
+    @keyframes float-up {
+      0%{opacity:0;transform:translateY(0) scale(0.5)}
+      30%{opacity:0.7}
+      100%{opacity:0;transform:translateY(-120px) scale(1.2)}
+    }
+    .hero-content {
+      position: relative; z-index: 10;
+      text-align: center; padding: 0 2rem;
+      max-width: 800px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(200,168,75,0.12);
+      border: 1px solid rgba(200,168,75,0.3);
+      border-radius: 50px; padding: 0.4rem 1rem;
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+    .hero-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse-glow 1.5s infinite; }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900; line-height: 1.08;
+      color: var(--white); margin-bottom: 1.2rem;
+    }
+    .hero-title .accent { color: var(--gold); }
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      color: rgba(242,239,231,0.75); max-width: 560px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--leaf), var(--leaf-light));
+      color: var(--white); border: none; border-radius: 50px;
+      padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 6px 30px rgba(45,122,58,0.45);
+      text-decoration: none;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(45,122,58,0.6); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--glass3); color: var(--cream);
+      border: 1px solid rgba(242,239,231,0.2);
+      border-radius: 50px; padding: 0.85rem 2rem;
+      font-size: 1rem; font-weight: 500; cursor: pointer;
+      transition: var(--transition); backdrop-filter: blur(10px);
+      text-decoration: none;
+    }
+    .btn-secondary:hover { background: var(--glass2); border-color: var(--gold); color: var(--gold); }
+    .hero-stats {
+      position: relative; z-index: 10;
+      display: flex; gap: 3rem; justify-content: center;
+      margin-top: 3rem; flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-number { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 0.78rem; color: rgba(242,239,231,0.6); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ===================== SCAN SECTION ===================== */
+    #scan {
+      padding: 6rem 2rem;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .section-eyebrow {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; color: var(--white);
+      text-align: center; margin-bottom: 1rem;
+    }
+    .section-subtitle {
+      color: rgba(242,239,231,0.65); text-align: center;
+      max-width: 520px; margin-bottom: 3rem; font-size: 1.05rem;
+    }
+    .scan-card {
+      width: 100%; max-width: 780px;
+      background: var(--glass2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .upload-zone {
+      padding: 3rem 2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; transition: var(--transition);
+      position: relative;
+    }
+    .upload-zone.drag-over { background: rgba(45,122,58,0.15); }
+    .upload-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(45,122,58,0.3), rgba(200,168,75,0.2));
+      border: 2px dashed rgba(200,168,75,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 1.2rem;
+      transition: var(--transition);
+    }
+    .upload-zone:hover .upload-icon { transform: scale(1.08); border-color: var(--gold); }
+    .upload-title { font-size: 1.1rem; font-weight: 600; color: var(--white); margin-bottom: 0.4rem; }
+    .upload-sub { font-size: 0.88rem; color: rgba(242,239,231,0.55); }
+    .upload-btn {
+      margin-top: 1.2rem;
+      background: linear-gradient(135deg, var(--leaf), var(--leaf-light));
+      color: white; border: none; border-radius: 50px;
+      padding: 0.6rem 1.6rem; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+    }
+    .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,122,58,0.5); }
+    #file-input { display: none; }
+    /* Preview */
+    #image-preview-zone { display: none; padding: 1.5rem; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    #preview-img { width: 120px; height: 120px; object-fit: cover; border-radius: 14px; border: 2px solid var(--leaf); }
+    #preview-info { flex: 1; }
+    #preview-name { font-weight: 600; color: var(--white); font-size: 0.95rem; }
+    #preview-size { font-size: 0.82rem; color: rgba(242,239,231,0.55); margin-top: 2px; }
+    #analyze-btn {
+      width: 100%; padding: 1rem;
+      background: linear-gradient(135deg, var(--leaf) 0%, var(--gold) 100%);
+      color: white; border: none; font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition); letter-spacing: 0.03em;
+    }
+    #analyze-btn:hover { opacity: 0.92; }
+    #analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* Loading */
+    #loading-zone {
+      display: none; padding: 3rem; flex-direction: column;
+      align-items: center; gap: 1rem;
+    }
+    .loader-ring {
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { color: rgba(242,239,231,0.7); font-size: 0.9rem; animation: pulse-glow 1.5s infinite; }
+    /* Results */
+    #results-zone { display: none; padding: 2rem; }
+    .result-header {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem; padding-bottom: 1.2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .health-badge {
+      padding: 0.4rem 1rem; border-radius: 50px;
+      font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+    }
+    .health-badge.excellent { background: rgba(45,200,80,0.2); color: #50e87a; border: 1px solid rgba(45,200,80,0.3); }
+    .health-badge.moderate { background: rgba(200,168,75,0.2); color: var(--gold-light); border: 1px solid rgba(200,168,75,0.3); }
+    .health-badge.poor { background: rgba(220,60,60,0.2); color: #ff7070; border: 1px solid rgba(220,60,60,0.3); }
+    .plant-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--white); }
+    .result-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .result-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+    }
+    .result-card-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+    .result-card-value { font-size: 0.95rem; color: var(--cream); line-height: 1.5; }
+    .progress-bar-wrap { margin-top: 0.5rem; }
+    .progress-bar {
+      height: 6px; border-radius: 3px;
+      background: rgba(255,255,255,0.1); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--leaf), var(--gold));
+      transition: width 1s ease;
+    }
+    .product-links { margin-top: 1.5rem; }
+    .product-links-title {
+      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 0.8rem;
+    }
+    .product-link-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .product-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(45,122,58,0.2); border: 1px solid rgba(45,122,58,0.35);
+      color: var(--cream); border-radius: 50px; padding: 0.38rem 0.9rem;
+      font-size: 0.82rem; text-decoration: none; transition: var(--transition);
+    }
+    .product-chip:hover { background: rgba(45,122,58,0.4); border-color: var(--leaf-light); transform: translateY(-1px); }
+    .try-again-btn {
+      margin-top: 1.2rem; width: 100%;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--cream); padding: 0.7rem; border-radius: var(--radius);
+      cursor: pointer; font-size: 0.9rem; transition: var(--transition);
+    }
+    .try-again-btn:hover { background: rgba(255,255,255,0.1); }
+
+    /* ===================== WATER SCHEDULER ===================== */
+    #water {
+      padding: 6rem 2rem;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .water-card {
+      width: 100%; max-width: 780px;
+      background: var(--glass2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      padding: 2.5rem;
+      box-shadow: var(--shadow);
+    }
+    .water-form { display: flex; flex-direction: column; gap: 1.2rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-label { font-size: 0.82rem; font-weight: 600; color: var(--gold); letter-spacing: 0.05em; text-transform: uppercase; }
+    .form-input, .form-select {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--cream); border-radius: 10px; padding: 0.7rem 1rem;
+      font-size: 0.95rem; font-family: 'Inter', sans-serif;
+      transition: var(--transition); outline: none;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--leaf); background: rgba(255,255,255,0.1); }
+    .form-select option { background: var(--forest); }
+    .schedule-output { margin-top: 1.5rem; display: none; }
+    .schedule-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .schedule-table th {
+      text-align: left; padding: 0.6rem 1rem;
+      font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold); border-bottom: 1px solid rgba(200,168,75,0.2);
+    }
+    .schedule-table td { padding: 0.7rem 1rem; font-size: 0.9rem; color: var(--cream); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .schedule-table tr:last-child td { border-bottom: none; }
+    .schedule-table tr:hover td { background: rgba(255,255,255,0.04); }
+    .water-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .water-dot.high { background: #60a5fa; }
+    .water-dot.medium { background: #34d399; }
+    .water-dot.low { background: #fbbf24; }
+    .notif-banner {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(45,122,58,0.15); border: 1px solid rgba(45,122,58,0.3);
+      border-radius: 12px; padding: 1rem 1.2rem;
+      margin-top: 1rem; font-size: 0.9rem; color: var(--cream);
+    }
+
+    /* ===================== FEATURES ===================== */
+    #features { padding: 6rem 2rem; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.4rem; max-width: 1100px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--glass2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+      transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--leaf), var(--gold));
+      opacity: 0; transition: var(--transition);
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(200,168,75,0.25); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      font-size: 2rem; margin-bottom: 1rem;
+      width: 56px; height: 56px;
+      background: rgba(45,122,58,0.2); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .feature-title { font-size: 1.05rem; font-weight: 700; color: var(--white); margin-bottom: 0.5rem; }
+    .feature-desc { font-size: 0.9rem; color: rgba(242,239,231,0.65); line-height: 1.65; }
+
+    /* ===================== HOW IT WORKS ===================== */
+    #how { padding: 6rem 2rem; }
+    .steps-container { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+    .step-card {
+      display: flex; gap: 1.5rem; align-items: flex-start;
+      background: var(--glass2); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius); padding: 1.8rem;
+      backdrop-filter: blur(12px); transition: var(--transition);
+    }
+    .step-card:hover { border-color: rgba(200,168,75,0.25); transform: translateX(4px); }
+    .step-number {
+      flex-shrink: 0; width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--leaf), var(--gold));
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.1rem; color: var(--white);
+    }
+    .step-content {}
+    .step-title { font-size: 1rem; font-weight: 700; color: var(--white); margin-bottom: 0.4rem; }
+    .step-desc { font-size: 0.9rem; color: rgba(242,239,231,0.65); line-height: 1.6; }
+
+    /* ===================== SEASONAL GUIDE ===================== */
+    #seasons { padding: 6rem 2rem; }
+    .seasons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.2rem; max-width: 1000px; margin: 0 auto; }
+    .season-card {
+      border-radius: var(--radius);
+      padding: 2rem; text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      transition: var(--transition);
+    }
+    .season-card:hover { transform: translateY(-4px); }
+    .season-spring { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
+    .season-summer { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.2); }
+    .season-autumn { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.2); }
+    .season-winter { background: rgba(99,160,220,0.1); border-color: rgba(99,160,220,0.2); }
+    .season-emoji { font-size: 2.5rem; margin-bottom: 0.8rem; }
+    .season-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: var(--white); margin-bottom: 0.5rem; }
+    .season-desc { font-size: 0.88rem; color: rgba(242,239,231,0.65); }
+    .season-tip { margin-top: 0.8rem; font-size: 0.82rem; font-style: italic; color: var(--gold); }
+
+    /* ===================== TECH STACK ===================== */
+    #tech { padding: 6rem 2rem; background: rgba(0,0,0,0.15); }
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; max-width: 900px; margin: 0 auto; }
+    .tech-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--glass2); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 1rem 1.2rem;
+      transition: var(--transition);
+    }
+    .tech-pill:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .tech-icon { font-size: 1.5rem; }
+    .tech-name { font-size: 0.88rem; font-weight: 600; color: var(--cream); }
+    .tech-role { font-size: 0.75rem; color: rgba(242,239,231,0.5); }
+
+    /* ===================== FOUNDERS ===================== */
+    #founders { padding: 6rem 2rem 4rem; }
+    .founders-section { max-width: 900px; margin: 0 auto; }
+    .founder-divider {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 3rem;
+    }
+    .founder-divider-line { flex: 1; height: 1px; background: rgba(200,168,75,0.25); }
+    .founder-divider-text { font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+    .leader-card {
+      background: linear-gradient(135deg, rgba(45,122,58,0.2), rgba(200,168,75,0.1));
+      border: 1px solid rgba(200,168,75,0.3);
+      border-radius: 24px; padding: 2.5rem;
+      text-align: center; margin-bottom: 2rem;
+      position: relative; overflow: hidden;
+    }
+    .leader-card::before {
+      content: ''; position: absolute;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(200,168,75,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .leader-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--leaf), var(--gold));
+      color: var(--white); font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      border-radius: 50px; padding: 0.3rem 0.9rem; margin-bottom: 0.8rem;
+    }
+    .leader-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--leaf), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin: 0.8rem auto;
+      box-shadow: 0 0 0 4px rgba(200,168,75,0.2);
+    }
+    .leader-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 700; color: var(--white);
+    }
+    .leader-role { font-size: 0.88rem; color: var(--gold); margin-top: 0.3rem; }
+    .members-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .member-card {
+      background: var(--glass2); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius); padding: 1.5rem 1rem;
+      text-align: center; transition: var(--transition);
+    }
+    .member-card:hover { border-color: rgba(200,168,75,0.25); transform: translateY(-3px); }
+    .member-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--forest), var(--leaf));
+      border: 2px solid rgba(45,122,58,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin: 0 auto 0.8rem;
+    }
+    .member-name { font-size: 0.9rem; font-weight: 600; color: var(--white); }
+    .member-role { font-size: 0.75rem; color: rgba(242,239,231,0.55); margin-top: 0.3rem; }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      background: rgba(0,0,0,0.25);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 2rem; text-align: center;
+    }
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; font-weight: 700; color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+    .footer-tagline { font-size: 0.82rem; color: rgba(242,239,231,0.4); }
+    .footer-copy { margin-top: 1rem; font-size: 0.78rem; color: rgba(242,239,231,0.3); }
+
+    /* ===================== UTILITIES ===================== */
+    .text-center { text-align: center; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .section-header { text-align: center; margin-bottom: 3.5rem; }
+    @media (max-width: 640px) {
+      nav { padding: 1rem 1.2rem; }
+      .nav-links { display: none; }
+      .hero-title { font-size: 2.4rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .hero-stats { gap: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== NAV ========== -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-icon">🌿</div>
+    Agro<span>Shield</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#scan">Scan</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#water">Water Schedule</a></li>
+    <li><a href="#founders">Team</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('scan').scrollIntoView({behavior:'smooth'})">Scan a Plant</button>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <!-- Animated Field -->
+  <div class="field-container" id="field-container">
+    <svg class="field-svg" viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0D2B1A" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#0D2B1A" stop-opacity="0.6"/>
+        </linearGradient>
+        <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1a3d20"/>
+          <stop offset="100%" stop-color="#0a1f0d"/>
+        </linearGradient>
+      </defs>
+      <!-- Ground -->
+      <rect x="0" y="340" width="1440" height="60" fill="url(#groundGrad)"/>
+      <!-- Stalks (repeated pattern) -->
+      <g id="stalks">
+        <!-- Generate many stalks -->
+        <g class="stalk" style="animation: sway1 3.2s ease-in-out infinite; animation-delay:0s">
+          <rect x="72" y="180" width="4" height="165" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="74" cy="175" rx="18" ry="28" fill="#3FAF50" opacity="0.85"/>
+        </g>
+        <g class="stalk" style="animation: sway2 2.8s ease-in-out infinite; animation-delay:0.3s">
+          <rect x="132" y="200" width="4" height="145" rx="2" fill="#245f2e"/>
+          <ellipse cx="134" cy="194" rx="16" ry="24" fill="#2D7A3A" opacity="0.75"/>
+        </g>
+        <g class="stalk" style="animation: sway3 3.5s ease-in-out infinite; animation-delay:0.6s">
+          <rect x="192" y="170" width="5" height="175" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="194" cy="164" rx="20" ry="30" fill="#3FAF50" opacity="0.9"/>
+          <ellipse cx="180" cy="210" rx="12" ry="18" fill="#2D7A3A" opacity="0.7" transform="rotate(-20,180,210)"/>
+        </g>
+        <g class="stalk" style="animation: sway1 2.6s ease-in-out infinite; animation-delay:0.9s">
+          <rect x="252" y="195" width="4" height="150" rx="2" fill="#245f2e"/>
+          <ellipse cx="254" cy="188" rx="17" ry="26" fill="#3FAF50" opacity="0.8"/>
+        </g>
+        <g class="stalk" style="animation: sway2 3.1s ease-in-out infinite; animation-delay:1.2s">
+          <rect x="312" y="178" width="5" height="167" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="314" cy="171" rx="19" ry="28" fill="#3FAF50" opacity="0.88"/>
+          <ellipse cx="300" cy="220" rx="13" ry="18" fill="#2D7A3A" opacity="0.65" transform="rotate(-25,300,220)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 3.8s ease-in-out infinite; animation-delay:0.2s">
+          <rect x="372" y="205" width="4" height="140" rx="2" fill="#245f2e"/>
+          <ellipse cx="374" cy="198" rx="15" ry="23" fill="#2D7A3A" opacity="0.72"/>
+        </g>
+        <g class="stalk" style="animation: sway1 2.9s ease-in-out infinite; animation-delay:1.5s">
+          <rect x="432" y="165" width="5" height="180" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="434" cy="158" rx="21" ry="32" fill="#3FAF50" opacity="0.92"/>
+        </g>
+        <g class="stalk" style="animation: sway2 3.4s ease-in-out infinite; animation-delay:0.7s">
+          <rect x="492" y="188" width="4" height="157" rx="2" fill="#245f2e"/>
+          <ellipse cx="494" cy="181" rx="18" ry="26" fill="#3FAF50" opacity="0.8"/>
+          <ellipse cx="505" cy="225" rx="12" ry="16" fill="#2D7A3A" opacity="0.6" transform="rotate(20,505,225)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 2.7s ease-in-out infinite; animation-delay:1.8s">
+          <rect x="552" y="175" width="5" height="170" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="554" cy="168" rx="20" ry="29" fill="#3FAF50" opacity="0.86"/>
+        </g>
+        <g class="stalk" style="animation: sway1 3.3s ease-in-out infinite; animation-delay:0.4s">
+          <rect x="612" y="200" width="4" height="145" rx="2" fill="#245f2e"/>
+          <ellipse cx="614" cy="193" rx="16" ry="24" fill="#2D7A3A" opacity="0.75"/>
+        </g>
+        <g class="stalk" style="animation: sway2 2.8s ease-in-out infinite; animation-delay:1.1s">
+          <rect x="672" y="170" width="5" height="175" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="674" cy="163" rx="21" ry="31" fill="#3FAF50" opacity="0.91"/>
+          <ellipse cx="658" cy="215" rx="13" ry="19" fill="#2D7A3A" opacity="0.68" transform="rotate(-18,658,215)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 3.6s ease-in-out infinite; animation-delay:0.8s">
+          <rect x="732" y="185" width="4" height="160" rx="2" fill="#245f2e"/>
+          <ellipse cx="734" cy="178" rx="17" ry="25" fill="#3FAF50" opacity="0.82"/>
+        </g>
+        <g class="stalk" style="animation: sway1 3.0s ease-in-out infinite; animation-delay:1.4s">
+          <rect x="792" y="168" width="5" height="177" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="794" cy="161" rx="22" ry="33" fill="#3FAF50" opacity="0.9"/>
+        </g>
+        <g class="stalk" style="animation: sway2 2.9s ease-in-out infinite; animation-delay:0.5s">
+          <rect x="852" y="195" width="4" height="150" rx="2" fill="#245f2e"/>
+          <ellipse cx="854" cy="188" rx="16" ry="23" fill="#2D7A3A" opacity="0.76"/>
+          <ellipse cx="865" cy="230" rx="11" ry="15" fill="#2D7A3A" opacity="0.58" transform="rotate(22,865,230)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 3.2s ease-in-out infinite; animation-delay:1.7s">
+          <rect x="912" y="175" width="5" height="170" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="914" cy="168" rx="20" ry="30" fill="#3FAF50" opacity="0.87"/>
+        </g>
+        <g class="stalk" style="animation: sway1 2.6s ease-in-out infinite; animation-delay:0.3s">
+          <rect x="972" y="200" width="4" height="145" rx="2" fill="#245f2e"/>
+          <ellipse cx="974" cy="193" rx="15" ry="22" fill="#2D7A3A" opacity="0.73"/>
+        </g>
+        <g class="stalk" style="animation: sway2 3.7s ease-in-out infinite; animation-delay:1.0s">
+          <rect x="1032" y="165" width="5" height="180" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="1034" cy="158" rx="22" ry="33" fill="#3FAF50" opacity="0.93"/>
+          <ellipse cx="1018" cy="208" rx="14" ry="20" fill="#2D7A3A" opacity="0.7" transform="rotate(-22,1018,208)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 3.1s ease-in-out infinite; animation-delay:1.3s">
+          <rect x="1092" y="185" width="4" height="160" rx="2" fill="#245f2e"/>
+          <ellipse cx="1094" cy="178" rx="18" ry="27" fill="#3FAF50" opacity="0.83"/>
+        </g>
+        <g class="stalk" style="animation: sway1 2.8s ease-in-out infinite; animation-delay:0.6s">
+          <rect x="1152" y="172" width="5" height="173" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="1154" cy="165" rx="20" ry="30" fill="#3FAF50" opacity="0.88"/>
+        </g>
+        <g class="stalk" style="animation: sway2 3.3s ease-in-out infinite; animation-delay:1.6s">
+          <rect x="1212" y="198" width="4" height="147" rx="2" fill="#245f2e"/>
+          <ellipse cx="1214" cy="191" rx="16" ry="24" fill="#2D7A3A" opacity="0.77"/>
+          <ellipse cx="1226" cy="235" rx="12" ry="17" fill="#2D7A3A" opacity="0.61" transform="rotate(19,1226,235)"/>
+        </g>
+        <g class="stalk" style="animation: sway3 2.7s ease-in-out infinite; animation-delay:0.1s">
+          <rect x="1272" y="180" width="5" height="165" rx="2" fill="#2D7A3A"/>
+          <ellipse cx="1274" cy="173" rx="19" ry="28" fill="#3FAF50" opacity="0.85"/>
+        </g>
+        <g class="stalk" style="animation: sway1 3.5s ease-in-out infinite; animation-delay:0.9s">
+          <rect x="1360" y="190" width="4" height="155" rx="2" fill="#245f2e"/>
+          <ellipse cx="1362" cy="183" rx="17" ry="25" fill="#2D7A3A" opacity="0.78"/>
+        </g>
+      </g>
+      <!-- Gradient overlay -->
+      <rect x="0" y="0" width="1440" height="400" fill="url(#skyGrad)"/>
+      <!-- Glowing dots (bugs) -->
+      <circle cx="300" cy="240" r="3" fill="#C8A84B" opacity="0.6">
+        <animate attributeName="opacity" values="0.2;0.9;0.2" dur="2.1s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="240;230;240" dur="2.1s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="720" cy="220" r="3" fill="#C8A84B" opacity="0.5">
+        <animate attributeName="opacity" values="0.1;0.8;0.1" dur="1.7s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="220;208;220" dur="1.7s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="1100" cy="235" r="2.5" fill="#C8A84B" opacity="0.5">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="2.4s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="235;225;235" dur="2.4s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  </div>
+
+  <!-- Floating particles -->
+  <div id="particles"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">AI-Powered Agriculture</div>
+    <h1 class="hero-title">
+      Protect Your Crops<br/>with <span class="accent">AgroShield</span>
+    </h1>
+    <p class="hero-subtitle">
+      Upload a photo of any plant or crop. Our AI instantly identifies pests, diseases, and gives you a full care plan — for free.
+    </p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#scan">🔍 Scan a Plant Now</a>
+      <a class="btn-secondary" href="#how">See How It Works</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-number">500+</div><div class="stat-label">Pest Species</div></div>
+    <div class="stat"><div class="stat-number">98%</div><div class="stat-label">Accuracy</div></div>
+    <div class="stat"><div class="stat-number">0</div><div class="stat-label">Login Required</div></div>
+    <div class="stat"><div class="stat-number">Free</div><div class="stat-label">Always</div></div>
+  </div>
+</section>
+
+<!-- ========== SCAN / AI SECTION ========== -->
+<section id="scan">
+  <div class="section-eyebrow text-center">AI Pest Identifier</div>
+  <h2 class="section-title">Scan Your Plant</h2>
+  <p class="section-subtitle">Upload a clear photo and get a full crop health report in seconds — powered by Claude AI.</p>
+
+  <div class="scan-card">
+    <!-- Upload zone -->
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📷</div>
+      <div class="upload-title">Drop your plant photo here</div>
+      <div class="upload-sub">Supports JPG, PNG, WEBP · Max 10MB</div>
+      <button class="upload-btn" type="button">Choose Photo</button>
+      <input type="file" id="file-input" accept="image/*" />
+    </div>
+
+    <!-- Preview zone -->
+    <div id="image-preview-zone" style="display:none; padding:1.5rem; align-items:center; gap:1rem; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.07);">
+      <img id="preview-img" src="" alt="Preview" />
+      <div id="preview-info">
+        <div id="preview-name">—</div>
+        <div id="preview-size">—</div>
+      </div>
+      <button class="upload-btn" type="button" onclick="resetUpload()" style="margin-left:auto;">Change</button>
+    </div>
+
+    <button id="analyze-btn" onclick="analyzeImage()" disabled>
+      🔬 Analyze Plant Health
+    </button>
+
+    <!-- Loading -->
+    <div id="loading-zone" style="display:none; flex-direction:column; align-items:center; gap:1rem; padding:3rem;">
+      <div class="loader-ring"></div>
+      <div class="loader-text" id="loader-text">Analyzing your plant with AI…</div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-zone" style="display:none; padding:2rem;">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ========== FEATURES ========== -->
+<section id="features">
+  <div class="section-header">
+    <div class="section-eyebrow">What We Detect</div>
+    <h2 class="section-title">Complete Crop Intelligence</h2>
+    <p class="section-subtitle">One photo gives you everything you need to protect and grow your plants.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🐛</div>
+      <div class="feature-title">Pest & Insect Identification</div>
+      <div class="feature-desc">Detect aphids, caterpillars, beetles, and 500+ other pests instantly with AI-powered image recognition.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🍂</div>
+      <div class="feature-title">Disease Detection</div>
+      <div class="feature-desc">Identify fungal infections, bacterial blight, viral diseases and leaf spot patterns before they spread.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💊</div>
+      <div class="feature-title">Treatment Solutions</div>
+      <div class="feature-desc">Get organic and chemical treatment options with step-by-step application instructions tailored to your crop.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">❤️</div>
+      <div class="feature-title">Crop Health Score</div>
+      <div class="feature-desc">A comprehensive health rating with visual indicators so you always know how your plants are doing at a glance.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛒</div>
+      <div class="feature-title">Direct Product Links</div>
+      <div class="feature-desc">Instantly shop for the exact pesticides, fertilizers, or tools you need — at the lowest prices available.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💧</div>
+      <div class="feature-title">Smart Water Scheduler</div>
+      <div class="feature-desc">Set watering reminders customized to your plant type, soil, and local climate so your crops are never under- or over-watered.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌤️</div>
+      <div class="feature-title">Seasonal Care Guide</div>
+      <div class="feature-desc">Know exactly what to do each season — when to fertilize, prune, harvest, and which months pose the greatest risk.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚫</div>
+      <div class="feature-title">No Login Required</div>
+      <div class="feature-desc">Open the link and start immediately. No account, no sign-up, no subscription. Just pure, instant plant intelligence.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOW IT WORKS ========== -->
+<section id="how">
+  <div class="section-header">
+    <div class="section-eyebrow">Process</div>
+    <h2 class="section-title">How AgroShield Works</h2>
+    <p class="section-subtitle">From photo to full diagnosis in under 10 seconds.</p>
+  </div>
+  <div class="steps-container">
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <div class="step-title">📷 Take or Upload a Photo</div>
+        <div class="step-desc">Use your phone or camera to photograph your crop or plant. A clear, well-lit photo of the leaves, stem, or affected area works best. No special equipment needed.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <div class="step-title">🧠 AI Analyzes the Image</div>
+        <div class="step-desc">Our AI model, built on Claude (Anthropic's advanced AI), processes the image. It's trained on thousands of agricultural datasets covering diseases, pests, and plant conditions across all major crops.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <div class="step-title">📊 Get Your Full Report</div>
+        <div class="step-desc">In seconds, receive a detailed health score, pest identification, disease name, severity level, and exactly which insects or pathogens are present — with visual confidence percentages.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <div class="step-title">💡 Follow the Solution Plan</div>
+        <div class="step-desc">Receive a step-by-step treatment plan with organic and chemical options, application timing, dosage, and precautions. Seasonal care tips are included automatically based on your crop type.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <div class="step-title">🛒 Shop Directly for Products</div>
+        <div class="step-desc">Click the product links we generate — they take you directly to Amazon, Flipkart, or local agri-stores with the exact fertilizer, pesticide, or tool your plant needs. Budget-friendly options always included.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== WATER SCHEDULER ========== -->
+<section id="water">
+  <div class="section-eyebrow text-center">Smart Irrigation</div>
+  <h2 class="section-title">Water Schedule Generator</h2>
+  <p class="section-subtitle">Tell us about your crop and we'll build a personalized watering calendar so you never miss a cycle.</p>
+
+  <div class="water-card">
+    <div class="water-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Plant / Crop Name</label>
+          <input class="form-input" id="ws-plant" type="text" placeholder="e.g. Tomato, Rice, Tulsi…" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Soil Type</label>
+          <select class="form-select" id="ws-soil">
+            <option value="">Select soil type</option>
+            <option value="sandy">Sandy Soil</option>
+            <option value="clay">Clay Soil</option>
+            <option value="loam">Loam Soil</option>
+            <option value="silt">Silt Soil</option>
+            <option value="peat">Peat / Organic Soil</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Climate / Season</label>
+          <select class="form-select" id="ws-climate">
+            <option value="">Select season</option>
+            <option value="hot-dry">Hot &amp; Dry (Summer)</option>
+            <option value="humid">Hot &amp; Humid (Monsoon)</option>
+            <option value="cool">Cool &amp; Mild (Winter)</option>
+            <option value="cold">Cold (Post-harvest)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Growth Stage</label>
+          <select class="form-select" id="ws-stage">
+            <option value="">Select stage</option>
+            <option value="seedling">Seedling (0–2 weeks)</option>
+            <option value="vegetative">Vegetative Growth</option>
+            <option value="flowering">Flowering / Budding</option>
+            <option value="fruiting">Fruiting / Harvesting</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" style="width:100%; justify-content:center;" onclick="generateSchedule()">
+        💧 Generate My Water Schedule
+      </button>
+      <div class="schedule-output" id="schedule-output">
+        <div class="notif-banner">🔔 <strong>Tip:</strong> Save this page or screenshot your schedule. Set phone alarms to match the times below for best results.</div>
+        <table class="schedule-table" id="schedule-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Time</th>
+              <th>Amount</th>
+              <th>Need Level</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SEASONAL GUIDE ========== -->
+<section id="seasons">
+  <div class="section-header">
+    <div class="section-eyebrow">Year-Round Care</div>
+    <h2 class="section-title">Seasonal Crop Guide</h2>
+    <p class="section-subtitle">Know the critical windows for every season — what to do and what to watch for.</p>
+  </div>
+  <div class="seasons-grid">
+    <div class="season-card season-spring">
+      <div class="season-emoji">🌱</div>
+      <div class="season-name">Spring (Feb–May)</div>
+      <div class="season-desc">Ideal for planting. Begin fertilizing, watch for early aphid and whitefly invasions. Soil preparation is key.</div>
+      <div class="season-tip">⚠️ Risk: Powdery Mildew, Aphids</div>
+    </div>
+    <div class="season-card season-summer">
+      <div class="season-emoji">☀️</div>
+      <div class="season-name">Summer (May–Aug)</div>
+      <div class="season-desc">High water demand. Watch for heat stress, spider mites, and caterpillar outbreaks. Mulch to retain moisture.</div>
+      <div class="season-tip">⚠️ Risk: Spider Mites, Heat Stress</div>
+    </div>
+    <div class="season-card season-autumn">
+      <div class="season-emoji">🍂</div>
+      <div class="season-name">Monsoon / Kharif (Jun–Oct)</div>
+      <div class="season-desc">Peak risk for fungal disease and root rot. Ensure drainage, reduce watering, spray preventive fungicide.</div>
+      <div class="season-tip">⚠️ Risk: Blight, Root Rot, Fungus</div>
+    </div>
+    <div class="season-card season-winter">
+      <div class="season-emoji">❄️</div>
+      <div class="season-name">Winter (Nov–Jan)</div>
+      <div class="season-desc">Protect from frost. Slow watering cycle, prune dead growth, apply potassium for cold resistance.</div>
+      <div class="season-tip">⚠️ Risk: Frost Damage, Slow Growth</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TECH STACK ========== -->
+<section id="tech">
+  <div class="section-header">
+    <div class="section-eyebrow">Built With</div>
+    <h2 class="section-title">Our Tech Stack</h2>
+    <p class="section-subtitle">Industry-grade tools powering every diagnosis.</p>
+  </div>
+  <div class="tech-grid" style="max-width:900px; margin:0 auto;">
+    <div class="tech-pill">
+      <div class="tech-icon">🧠</div>
+      <div><div class="tech-name">Claude AI (Anthropic)</div><div class="tech-role">Core AI Model</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">📡</div>
+      <div><div class="tech-name">Anthropic API</div><div class="tech-role">Vision + Language</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">⚡</div>
+      <div><div class="tech-name">Vanilla JS (ES6+)</div><div class="tech-role">Frontend Logic</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">🎨</div>
+      <div><div class="tech-name">CSS3 + Glassmorphism</div><div class="tech-role">UI / Design</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">🖼️</div>
+      <div><div class="tech-name">HTML5 Canvas / SVG</div><div class="tech-role">Animated Field</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">🌐</div>
+      <div><div class="tech-name">Google Fonts</div><div class="tech-role">Typography</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">🔒</div>
+      <div><div class="tech-name">No Backend Server</div><div class="tech-role">Pure Client-Side</div></div>
+    </div>
+    <div class="tech-pill">
+      <div class="tech-icon">📱</div>
+      <div><div class="tech-name">Responsive Design</div><div class="tech-role">Mobile-First CSS</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOUNDERS ========== -->
+<section id="founders">
+  <div class="section-header">
+    <div class="section-eyebrow">The Team</div>
+    <h2 class="section-title">Meet the Founders</h2>
+    <p class="section-subtitle">Students building the future of smart agriculture.</p>
+  </div>
+  <div class="founders-section">
+    <div class="founder-divider">
+      <div class="founder-divider-line"></div>
+      <div class="founder-divider-text">Project Leader</div>
+      <div class="founder-divider-line"></div>
+    </div>
+    <div class="leader-card">
+      <div class="leader-badge">Leader</div>
+      <div class="leader-avatar">👑</div>
+      <div class="leader-name">Shaik Absaar Ahmed</div>
+      <div class="leader-role">Project Lead · Full-Stack Vision · Presenter</div>
+    </div>
+
+    <div class="founder-divider" style="margin-top:2.5rem;">
+      <div class="founder-divider-line"></div>
+      <div class="founder-divider-text">Team Members</div>
+      <div class="founder-divider-line"></div>
+    </div>
+    <div class="members-grid">
+      <div class="member-card">
+        <div class="member-avatar">💻</div>
+        <div class="member-name">Mohammed Muzaffer Ali</div>
+        <div class="member-role">Frontend Developer</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar">🧠</div>
+        <div class="member-name">Shaik Anas Ahmed</div>
+        <div class="member-role">AI / ML Integration</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar">🎨</div>
+        <div class="member-name">Sai Jeshwanth</div>
+        <div class="member-role">UI / UX Designer</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar">📊</div>
+        <div class="member-name">Shamitha</div>
+        <div class="member-role">Research & Data</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar">📣</div>
+        <div class="member-name">Sharanya</div>
+        <div class="member-role">Documentation & Pitch</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="footer-logo">🌿 AgroShield</div>
+  <div class="footer-tagline">Smart Pest Identification for Every Farmer & Gardener</div>
+  <div class="footer-copy">© 2025 AgroShield · Built for Smart India Hackathon · All Rights Reserved</div>
+</footer>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+  // ============================================================
+  // CONFIGURATION — Replace with your real Anthropic API Key
+  // For hackathon demo, you can put the key directly here.
+  // In production, use a backend proxy.
+  // ============================================================
+  const ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE";
+
+  // ============================================================
+  // PARTICLE SYSTEM
+  // ============================================================
+  function createParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('div');
+      p.className = 'floating-particle';
+      p.style.cssText = `
+        width:${Math.random()*6+3}px; height:${Math.random()*6+3}px;
+        left:${Math.random()*100}%; bottom:${Math.random()*35+5}%;
+        animation-delay:${Math.random()*4}s;
+        animation-duration:${Math.random()*3+3}s;
+        position:absolute;
+      `;
+      container.appendChild(p);
+    }
+  }
+  createParticles();
+
+  // ============================================================
+  // FILE UPLOAD
+  // ============================================================
+  let selectedFile = null;
+  let selectedBase64 = null;
+
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    handleFile(file);
+  });
+
+  const uploadZone = document.getElementById('upload-zone');
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleFile(file);
+  });
+
+  function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      selectedBase64 = ev.target.result.split(',')[1];
+      document.getElementById('preview-img').src = ev.target.result;
+      document.getElementById('preview-name').textContent = file.name;
+      document.getElementById('preview-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+      uploadZone.style.display = 'none';
+      document.getElementById('image-preview-zone').style.display = 'flex';
+      document.getElementById('analyze-btn').disabled = false;
+      document.getElementById('results-zone').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetUpload() {
+    selectedFile = null;
+    selectedBase64 = null;
+    document.getElementById('file-input').value = '';
+    uploadZone.style.display = 'flex';
+    document.getElementById('image-preview-zone').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = true;
+    document.getElementById('results-zone').style.display = 'none';
+    document.getElementById('loading-zone').style.display = 'none';
+  }
+
+  // ============================================================
+  // AI ANALYSIS
+  // ============================================================
+  const loaderMessages = [
+    "Analyzing plant structure…",
+    "Identifying pest markers…",
+    "Checking disease patterns…",
+    "Generating care plan…",
+    "Finding product links…"
+  ];
+
+  async function analyzeImage() {
+    if (!selectedBase64) return;
+
+    // Show loading
+    document.getElementById('analyze-btn').style.display = 'none';
+    document.getElementById('loading-zone').style.display = 'flex';
+    document.getElementById('results-zone').style.display = 'none';
+    document.getElementById('image-preview-zone').style.display = 'none';
+
+    let msgIdx = 0;
+    const loaderInterval = setInterval(() => {
+      document.getElementById('loader-text').textContent = loaderMessages[msgIdx % loaderMessages.length];
+      msgIdx++;
+    }, 1400);
+
+    const prompt = `You are AgroShield, an expert agricultural AI assistant specializing in plant health, pest identification, and crop management.
+
+Analyze this plant/crop image and return ONLY a JSON object (no markdown, no extra text) with this exact structure:
+
+{
+  "plant_name": "Common name of the plant/crop",
+  "scientific_name": "Scientific name if identifiable",
+  "health_score": 85,
+  "health_status": "Excellent|Good|Moderate|Poor|Critical",
+  "condition_summary": "Brief 1-2 sentence overall condition summary",
+  "pests_detected": [
+    { "name": "Pest name", "severity": "Low|Medium|High", "description": "What you see and why it matters" }
+  ],
+  "diseases_detected": [
+    { "name": "Disease name", "severity": "Low|Medium|High", "description": "Symptoms visible and impact" }
+  ],
+  "treatment_plan": {
+    "immediate": ["Action 1", "Action 2"],
+    "organic_solutions": ["Organic treatment 1", "Organic treatment 2"],
+    "chemical_solutions": ["Chemical option 1 with dosage", "Chemical option 2"],
+    "prevention": ["Prevention tip 1", "Prevention tip 2"]
+  },
+  "care_guide": {
+    "watering": "Watering frequency and amount advice",
+    "fertilizing": "Fertilizer type and timing",
+    "sunlight": "Light requirements",
+    "pruning": "Pruning advice if needed"
+  },
+  "seasonal_risks": {
+    "spring": "Risk description or 'Low risk'",
+    "summer": "Risk description or 'Low risk'",
+    "monsoon": "Risk description or 'Low risk'",
+    "winter": "Risk description or 'Low risk'"
+  },
+  "harmful_season": "The most dangerous season name and why",
+  "product_recommendations": [
+    { "name": "Product/pesticide name", "use": "What it treats", "search_query": "Amazon search query for this product" },
+    { "name": "Fertilizer name", "use": "Purpose", "search_query": "Amazon search query" },
+    { "name": "Tool/accessory", "use": "Purpose", "search_query": "Amazon search query" }
+  ]
+}
+
+If the image is NOT a plant, return: {"error": "No plant detected. Please upload a clear photo of a plant or crop."}
+Be specific and practical. Assume the user is a small farmer or home gardener in India.`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2000,
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: selectedFile.type || "image/jpeg", data: selectedBase64 } },
+              { type: "text", text: prompt }
+            ]
+          }]
+        })
+      });
+
+      clearInterval(loaderInterval);
+      document.getElementById('loading-zone').style.display = 'none';
+
+      if (!response.ok) {
+        const err = await response.json();
+        showError(err.error?.message || "API error. Check your API key.");
+        return;
+      }
+
+      const data = await response.json();
+      const rawText = data.content[0]?.text || "{}";
+      let result;
+      try {
+        const cleaned = rawText.replace(/```json|```/g, "").trim();
+        result = JSON.parse(cleaned);
+      } catch(e) {
+        showError("AI response could not be parsed. Please try again.");
+        return;
+      }
+
+      if (result.error) { showError(result.error); return; }
+      renderResults(result);
+
+    } catch(err) {
+      clearInterval(loaderInterval);
+      document.getElementById('loading-zone').style.display = 'none';
+      showError("Connection error. If using a real API key, check your network. For demo mode — see the demo results below.");
+      renderDemoResults(); // Show demo if API not configured
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('analyze-btn').style.display = 'block';
+    document.getElementById('analyze-btn').disabled = false;
+    document.getElementById('image-preview-zone').style.display = 'flex';
+    document.getElementById('results-zone').style.display = 'block';
+    document.getElementById('results-zone').innerHTML = `
+      <div style="text-align:center; padding:2rem;">
+        <div style="font-size:2.5rem; margin-bottom:1rem;">⚠️</div>
+        <div style="color:#ff7070; font-weight:600; margin-bottom:0.5rem;">Analysis Error</div>
+        <div style="color:rgba(242,239,231,0.65); font-size:0.9rem;">${msg}</div>
+        <button class="try-again-btn" onclick="resetUpload()" style="margin-top:1rem;">Try Again</button>
+      </div>`;
+  }
+
+  function renderDemoResults() {
+    const demo = {
+      plant_name: "Tomato Plant",
+      scientific_name: "Solanum lycopersicum",
+      health_score: 62,
+      health_status: "Moderate",
+      condition_summary: "The tomato plant shows signs of early aphid infestation on the lower leaves and mild nutrient deficiency. Immediate treatment recommended to prevent spread.",
+      pests_detected: [
+        { name: "Aphids (Aphis gossypii)", severity: "Medium", description: "Small clusters visible on underside of lower leaves. Causing curling and yellowing." },
+        { name: "Whitefly", severity: "Low", description: "A few adults spotted near stem. Monitor closely." }
+      ],
+      diseases_detected: [
+        { name: "Early Blight (Alternaria solani)", severity: "Low", description: "Faint brown spots with concentric rings visible on older leaves. Early stage — treatable." }
+      ],
+      treatment_plan: {
+        immediate: ["Remove and discard heavily infested lower leaves", "Spray underside of leaves with water jet to dislodge aphids"],
+        organic_solutions: ["Neem oil spray (2ml/litre) twice weekly", "Garlic-chilli spray as natural repellent", "Introduce ladybugs as biological control"],
+        chemical_solutions: ["Imidacloprid 17.8% SL @ 0.5ml/litre — for aphids", "Mancozeb 75% WP @ 2g/litre — for early blight"],
+        prevention: ["Maintain 60cm spacing between plants for airflow", "Water at base only, avoid wetting foliage", "Weekly inspection of undersides of leaves"]
+      },
+      care_guide: {
+        watering: "Water deeply every 2–3 days. Reduce in monsoon. Use drip irrigation if possible.",
+        fertilizing: "Apply 19:19:19 NPK fortnightly. Add calcium in fruiting stage.",
+        sunlight: "Needs 6–8 hours of direct sunlight daily.",
+        pruning: "Remove suckers weekly. Prune lower branches touching soil."
+      },
+      seasonal_risks: {
+        spring: "Aphid and whitefly pressure starts. Begin preventive sprays.",
+        summer: "Spider mites and heat stress. Increase watering.",
+        monsoon: "High risk for blight and root rot. Ensure drainage.",
+        winter: "Frost damage to young plants. Cover at night below 10°C."
+      },
+      harmful_season: "Monsoon (June–September) — High humidity causes rapid spread of fungal diseases including blight and leaf mold.",
+      product_recommendations: [
+        { name: "Neem Oil (Cold Pressed)", use: "Organic aphid & pest repellent", search_query: "neem oil cold pressed for plants India" },
+        { name: "Imidacloprid 17.8% SL", use: "Chemical aphid control", search_query: "imidacloprid insecticide tomato India" },
+        { name: "Mancozeb 75% WP Fungicide", use: "Early blight prevention", search_query: "mancozeb fungicide plants India" }
+      ]
+    };
+    renderResults(demo);
+  }
+
+  function renderResults(r) {
+    const statusClass = { 'Excellent': 'excellent', 'Good': 'excellent', 'Moderate': 'moderate', 'Poor': 'poor', 'Critical': 'poor' };
+    const hClass = statusClass[r.health_status] || 'moderate';
+
+    let pestsHtml = r.pests_detected?.length > 0 
+      ? r.pests_detected.map(p => `<div style="margin-bottom:0.5rem;"><span style="color:${p.severity==='High'?'#ff7070':p.severity==='Medium'?'#fbbf24':'#34d399'};font-weight:600;">${p.name}</span> <span style="font-size:0.8rem;opacity:0.7;">[${p.severity}]</span><br/><span style="font-size:0.85rem;opacity:0.7;">${p.description}</span></div>`).join('')
+      : '<span style="color:#34d399;">✅ No pests detected</span>';
+
+    let diseasesHtml = r.diseases_detected?.length > 0
+      ? r.diseases_detected.map(d => `<div style="margin-bottom:0.5rem;"><span style="color:${d.severity==='High'?'#ff7070':d.severity==='Medium'?'#fbbf24':'#34d399'};font-weight:600;">${d.name}</span> <span style="font-size:0.8rem;opacity:0.7;">[${d.severity}]</span><br/><span style="font-size:0.85rem;opacity:0.7;">${d.description}</span></div>`).join('')
+      : '<span style="color:#34d399;">✅ No diseases detected</span>';
+
+    let treatmentHtml = '';
+    if (r.treatment_plan) {
+      const tp = r.treatment_plan;
+      if (tp.immediate?.length) treatmentHtml += `<div style="margin-bottom:0.8rem;"><div style="font-size:0.75rem;font-weight:700;color:var(--gold);margin-bottom:0.3rem;">IMMEDIATE ACTION</div>${tp.immediate.map(a=>`<div style="font-size:0.88rem;margin-bottom:0.2rem;">→ ${a}</div>`).join('')}</div>`;
+      if (tp.organic_solutions?.length) treatmentHtml += `<div style="margin-bottom:0.8rem;"><div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-bottom:0.3rem;">🌿 ORGANIC</div>${tp.organic_solutions.map(a=>`<div style="font-size:0.88rem;margin-bottom:0.2rem;">• ${a}</div>`).join('')}</div>`;
+      if (tp.chemical_solutions?.length) treatmentHtml += `<div style="margin-bottom:0.8rem;"><div style="font-size:0.75rem;font-weight:700;color:#60a5fa;margin-bottom:0.3rem;">⚗️ CHEMICAL</div>${tp.chemical_solutions.map(a=>`<div style="font-size:0.88rem;margin-bottom:0.2rem;">• ${a}</div>`).join('')}</div>`;
+    }
+
+    let productsHtml = '';
+    if (r.product_recommendations?.length) {
+      productsHtml = r.product_recommendations.map(p => `
+        <a href="https://www.amazon.in/s?k=${encodeURIComponent(p.search_query)}" target="_blank" class="product-chip">
+          🛒 ${p.name}
+        </a>
+        <a href="https://www.flipkart.com/search?q=${encodeURIComponent(p.search_query)}" target="_blank" class="product-chip">
+          📦 ${p.name} (Flipkart)
+        </a>
+      `).join('');
+    }
+
+    document.getElementById('results-zone').style.display = 'block';
+    document.getElementById('results-zone').innerHTML = `
+      <div class="result-header">
+        <div>
+          <div class="plant-name">${r.plant_name || 'Plant'}</div>
+          ${r.scientific_name ? `<div style="font-size:0.8rem;color:rgba(242,239,231,0.5);font-style:italic;">${r.scientific_name}</div>` : ''}
+        </div>
+        <span class="health-badge ${hClass}">${r.health_status}</span>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div class="result-card-label">Health Score</div>
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <div style="flex:1;" class="progress-bar"><div class="progress-fill" style="width:${r.health_score}%"></div></div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold);font-weight:700;">${r.health_score}/100</div>
+        </div>
+        <div style="font-size:0.88rem;color:rgba(242,239,231,0.65);margin-top:0.5rem;">${r.condition_summary}</div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-card-label">🐛 Pests Found</div>
+          <div class="result-card-value">${pestsHtml}</div>
+        </div>
+        <div class="result-card">
+          <div class="result-card-label">🍂 Diseases Found</div>
+          <div class="result-card-value">${diseasesHtml}</div>
+        </div>
+        <div class="result-card" style="grid-column:1/-1">
+          <div class="result-card-label">💊 Treatment Plan</div>
+          <div class="result-card-value">${treatmentHtml}</div>
+        </div>
+        ${r.care_guide ? `
+        <div class="result-card">
+          <div class="result-card-label">🌿 Care Guide</div>
+          <div class="result-card-value" style="font-size:0.85rem;">
+            ${r.care_guide.watering ? `<div><strong>💧 Water:</strong> ${r.care_guide.watering}</div>` : ''}
+            ${r.care_guide.fertilizing ? `<div style="margin-top:0.4rem;"><strong>🌱 Fertilize:</strong> ${r.care_guide.fertilizing}</div>` : ''}
+            ${r.care_guide.sunlight ? `<div style="margin-top:0.4rem;"><strong>☀️ Sun:</strong> ${r.care_guide.sunlight}</div>` : ''}
+            ${r.care_guide.pruning ? `<div style="margin-top:0.4rem;"><strong>✂️ Prune:</strong> ${r.care_guide.pruning}</div>` : ''}
+          </div>
+        </div>` : ''}
+        ${r.harmful_season ? `
+        <div class="result-card">
+          <div class="result-card-label">⚠️ Most Harmful Season</div>
+          <div class="result-card-value" style="color:#fbbf24;">${r.harmful_season}</div>
+        </div>` : ''}
+      </div>
+
+      ${productsHtml ? `
+      <div class="product-links">
+        <div class="product-links-title">🛒 Recommended Products — Shop Now</div>
+        <div class="product-link-chips">${productsHtml}</div>
+      </div>` : ''}
+
+      <button class="try-again-btn" onclick="resetUpload()">🔄 Scan Another Plant</button>
+    `;
+
+    document.getElementById('analyze-btn').style.display = 'block';
+    document.getElementById('analyze-btn').textContent = '✅ Analysis Complete — Scan Another?';
+    document.getElementById('analyze-btn').onclick = resetUpload;
+  }
+
+  // ============================================================
+  // WATER SCHEDULER
+  // ============================================================
+  function generateSchedule() {
+    const plant = document.getElementById('ws-plant').value || 'General Plant';
+    const soil = document.getElementById('ws-soil').value || 'loam';
+    const climate = document.getElementById('ws-climate').value || 'humid';
+    const stage = document.getElementById('ws-stage').value || 'vegetative';
+
+    // Watering logic based on inputs
+    const baseFrequency = {
+      'sandy': 1,     // every day
+      'loam': 2,      // every 2 days
+      'clay': 3,      // every 3 days
+      'silt': 2,
+      'peat': 2
+    }[soil] || 2;
+
+    const climateMultiplier = {
+      'hot-dry': 1,   // more frequent
+      'humid': 2,     // less frequent
+      'cool': 3,
+      'cold': 4
+    }[climate] || 2;
+
+    const stageAmount = {
+      'seedling': '250ml',
+      'vegetative': '500ml',
+      'flowering': '750ml',
+      'fruiting': '1 litre'
+    }[stage] || '500ml';
+
+    const needLevel = {
+      'hot-dry': { label: 'High', dot: 'high' },
+      'humid': { label: 'Medium', dot: 'medium' },
+      'cool': { label: 'Low', dot: 'low' },
+      'cold': { label: 'Low', dot: 'low' }
+    }[climate] || { label: 'Medium', dot: 'medium' };
+
+    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const watering_days = [];
+    const freq = Math.max(baseFrequency, Math.floor((baseFrequency + climateMultiplier) / 2));
+
+    for (let i = 0; i < 7; i++) {
+      if (i % freq === 0) watering_days.push(days[i]);
+    }
+    if (watering_days.length === 0) watering_days.push('Monday', 'Thursday');
+
+    const notes = {
+      'hot-dry': 'Water early morning (6–7 AM) to reduce evaporation.',
+      'humid': 'Check soil moisture before watering. Avoid over-watering.',
+      'cool': 'Water midday for best absorption. Avoid cold water.',
+      'cold': 'Water sparingly. Risk of root rot in cold/wet soil.'
+    }[climate] || 'Monitor soil moisture regularly.';
+
+    const times = ['6:00 AM', '7:00 AM', '6:30 AM', '7:30 AM'];
+    let rows = '';
+    watering_days.forEach((day, i) => {
+      rows += `<tr>
+        <td>${day}</td>
+        <td>${times[i % times.length]}</td>
+        <td>${stageAmount}</td>
+        <td><span class="water-dot ${needLevel.dot}"></span>${needLevel.label}</td>
+        <td style="font-size:0.82rem;opacity:0.75;">${i === 0 ? notes : 'Check soil moisture first.'}</td>
+      </tr>`;
+    });
+
+    document.getElementById('schedule-body').innerHTML = rows;
+    const out = document.getElementById('schedule-output');
+    out.style.display = 'block';
+    out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ============================================================
+  // SMOOTH SCROLL & NAV ACTIVE
+  // ============================================================
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    if (window.scrollY > 60) {
+      nav.style.background = 'rgba(7,20,10,0.95)';
+    } else {
+      nav.style.background = 'rgba(13,43,26,0.82)';
+    }
+  });
+</script>
+
+</body>
+</html>

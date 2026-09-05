@@ -1,6 +1,6 @@
 # AgroShield — Smart Pest Identifier for Crops & Plants
 
- (![Status](https://img.shields.io/badge/Status-Updates%20in%20Progress-yellow?style=for-the-badge))
+ ![Status](https://img.shields.io/badge/Status-Updates%20in%20Progress-yellow?style=for-the-badge)
 
 > [!NOTE]
 > **Work in Progress:** Major updates and fresh code are coming soon to this repository. )
